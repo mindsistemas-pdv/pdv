@@ -137,6 +137,8 @@ export interface ElectronAPI {
   getCashMovements: (cashRegisterId: number) => Promise<IpcResponse<CashMovement[]>>
   createSale: (sale: unknown) => Promise<IpcResponse<Sale>>
   getSalesByCashRegister: (cashRegisterId: number) => Promise<IpcResponse<Sale[]>>
+  getSaleById: (id: number) => Promise<IpcResponse<Sale>>
+  getAllSales: () => Promise<IpcResponse<Sale[]>>
   printReceipt: (data: unknown) => Promise<IpcResponse>
   savePdf: (data: unknown, savePath: string) => Promise<IpcResponse<string>>
   previewReceipt: (data: unknown) => Promise<IpcResponse>

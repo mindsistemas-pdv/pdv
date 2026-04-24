@@ -65,4 +65,10 @@ export const saleRepository = {
       .prepare('SELECT * FROM sales WHERE cash_register_id = ? ORDER BY created_at DESC')
       .all(cashRegisterId) as Sale[]
   },
+
+  findAll(): Sale[] {
+    return getDatabase()
+      .prepare('SELECT * FROM sales ORDER BY created_at DESC LIMIT 500')
+      .all() as Sale[]
+  },
 }

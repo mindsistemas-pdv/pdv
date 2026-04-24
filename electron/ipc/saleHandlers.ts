@@ -26,4 +26,25 @@ export function registerSaleHandlers(): void {
       return { success: false, error: 'Erro ao buscar vendas.' }
     }
   })
+
+  ipcMain.handle('sales:getById', async (_e, id: number): Promise<IpcResponse<Sale>> => {
+    try {
+      const sale = saleRepository.findById(id)
+      if (!sale) return { success: false, error: 'Venda não encontrada.' }
+      return { success: true, data: sale }
+    } catch (err) {
+      console.error('[sales:getById]', err)
+      return { success: false, error: 'Erro ao buscar venda.' }
+    }
+  })
+
+  ipcMain.handle('sales:getAll', async (): Promise<IpcResponse<Sale[]>> => {
+    try {
+      const sales = saleRepository.findAll()
+      return { success: true, data: sales }
+    } catch (err) {
+      console.error('[sales:getAll]', err)
+      return { success: false, error: 'Erro ao buscar vendas.' }
+    }
+  })
 }

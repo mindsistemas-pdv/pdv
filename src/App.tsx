@@ -10,6 +10,7 @@ import ProductsPage from './pages/ProductsPage'
 import CustomersPage from './pages/CustomersPage'
 import UsersPage from './pages/UsersPage'
 import CashRegisterPage from './pages/CashRegisterPage'
+import SalesHistoryPage from './pages/SalesHistoryPage'
 
 function CashRegisterLoader() {
   const { user } = useAuth()
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="customers" element={<CustomersPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="cash-register" element={<CashRegisterPage />} />
+              <Route path="sales-history" element={<SalesHistoryPage />} />
             </Route>
           </Routes>
         </CashRegisterProvider>

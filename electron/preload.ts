@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld('api', {
   createSale: (sale: unknown) => ipcRenderer.invoke('sales:create', sale),
   getSalesByCashRegister: (cashRegisterId: number) =>
     ipcRenderer.invoke('sales:getByCashRegister', cashRegisterId),
+  getSaleById: (id: number) => ipcRenderer.invoke('sales:getById', id),
+  getAllSales: () => ipcRenderer.invoke('sales:getAll'),
 
   // Impressão
   printReceipt: (data: unknown) => ipcRenderer.invoke('print:receipt', data),

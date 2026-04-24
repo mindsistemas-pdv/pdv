@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Package, DollarSign, LogOut, Users, UserCog } from 'lucide-react'
+import { ShoppingCart, Package, DollarSign, LogOut, Users, UserCog, History } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useCashRegister } from '../contexts/CashRegisterContext'
 
@@ -34,9 +34,11 @@ export default function MainLayout() {
           <NavLink to="/cash-register" className={navClass}>
             <DollarSign size={16} /> Caixa
           </NavLink>
+          <NavLink to="/sales-history" className={navClass}>
+            <History size={16} /> Histórico de Vendas
+          </NavLink>
 
-          <p className="text-xs text-slate-600 uppercase tracking-wider px-3 pt-3 pb-1">Cadastros</p>
-          <NavLink to="/products" className={navClass}>
+          <p className="text-xs text-slate-600 uppercase tracking-wider px-3 pt-3 pb-1">Cadastros</p>          <NavLink to="/products" className={navClass}>
             <Package size={16} /> Produtos
           </NavLink>
           <NavLink to="/customers" className={navClass}>
