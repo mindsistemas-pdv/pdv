@@ -4,10 +4,10 @@
   "description": "MindSys PDV - Sistema de Ponto de Venda",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "tsc && vite build && electron-builder",
-    "preview": "vite preview",
-    "electron": "electron ."
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build && electron-builder",
+    "preview": "vite preview"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
