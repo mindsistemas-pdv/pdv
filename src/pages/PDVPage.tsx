@@ -298,6 +298,7 @@ export default function PDVPage() {
           total={total}
           cashRegisterId={cashRegister.id}
           userId={user.id}
+          operatorName={user.name}
           onClose={() => setPaymentModalOpen(false)}
           onFinished={handleSaleFinished}
         />

@@ -43,4 +43,9 @@ contextBridge.exposeInMainWorld('api', {
   createSale: (sale: unknown) => ipcRenderer.invoke('sales:create', sale),
   getSalesByCashRegister: (cashRegisterId: number) =>
     ipcRenderer.invoke('sales:getByCashRegister', cashRegisterId),
+
+  // Impressão
+  printReceipt: (data: unknown) => ipcRenderer.invoke('print:receipt', data),
+  savePdf: (data: unknown, savePath: string) => ipcRenderer.invoke('print:savePdf', data, savePath),
+  previewReceipt: (data: unknown) => ipcRenderer.invoke('print:preview', data),
 })
