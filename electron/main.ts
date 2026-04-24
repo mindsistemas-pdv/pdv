@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { initDatabase } from './database/connection'
 import { registerProductHandlers } from './ipc/productHandlers'
@@ -6,8 +6,9 @@ import { registerSaleHandlers } from './ipc/saleHandlers'
 import { registerCashRegisterHandlers } from './ipc/cashRegisterHandlers'
 import { registerAuthHandlers } from './ipc/authHandlers'
 
-// O vite-plugin-electron injeta VITE_DEV_SERVER_URL em desenvolvimento
-const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
+// Em dev, o Vite roda na porta 5173
+// Em produção, carrega o index.html do build
+const isDev = !app.isPackaged
 
 let mainWindow: BrowserWindow | null = null
 
@@ -26,12 +27,10 @@ function createWindow() {
     },
   })
 
-  if (VITE_DEV_SERVER_URL) {
-    // Desenvolvimento: carrega o servidor Vite
-    mainWindow.loadURL(VITE_DEV_SERVER_URL)
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools()
   } else {
-    // Produção: carrega o build estático
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 }
