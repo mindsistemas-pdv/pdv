@@ -115,3 +115,63 @@ export interface IpcResponse<T = unknown> {
   data?: T
   error?: string
 }
+
+// ─── Cliente ─────────────────────────────────────────────────────────────────
+
+export interface Customer {
+  id: number
+  name: string
+  cpf_cnpj: string | null
+  phone: string | null
+  email: string | null
+  active: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateCustomerDTO {
+  name: string
+  cpf_cnpj?: string | null
+  phone?: string | null
+  email?: string | null
+}
+
+export type UpdateCustomerDTO = CreateCustomerDTO
+
+// ─── Movimentos de caixa ─────────────────────────────────────────────────────
+
+export type CashMovementType = 'withdrawal' | 'supply'
+
+export interface CashMovement {
+  id: number
+  cash_register_id: number
+  user_id: number
+  type: CashMovementType
+  amount: number
+  description: string | null
+  created_at: string
+}
+
+export interface CreateCashMovementDTO {
+  cashRegisterId: number
+  userId: number
+  type: CashMovementType
+  amount: number
+  description?: string
+}
+
+// ─── Usuário (DTOs de criação/edição) ────────────────────────────────────────
+
+export interface CreateUserDTO {
+  name: string
+  username: string
+  password: string
+  role: 'admin' | 'operator' | 'manager'
+}
+
+export interface UpdateUserDTO {
+  name: string
+  username: string
+  role: 'admin' | 'operator' | 'manager'
+  password?: string
+}

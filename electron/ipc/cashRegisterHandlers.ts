@@ -48,4 +48,26 @@ export function registerCashRegisterHandlers(): void {
       return { success: false, error: 'Erro ao buscar resumo do caixa.' }
     }
   })
+
+  ipcMain.handle('cashRegister:addMovement', async (_e, data: unknown): Promise<IpcResponse> => {
+    try {
+      const { cashMovementRepository } = await import('../repositories/cashMovementRepository')
+      const movement = cashMovementRepository.create(data as import('../types').CreateCashMovementDTO)
+      return { success: true, data: movement }
+    } catch (err) {
+      console.error('[cashRegister:addMovement]', err)
+      return { success: false, error: 'Erro ao registrar movimento.' }
+    }
+  })
+
+  ipcMain.handle('cashRegister:getMovements', async (_e, cashRegisterId: number): Promise<IpcResponse> => {
+    try {
+      const { cashMovementRepository } = await import('../repositories/cashMovementRepository')
+      const movements = cashMovementRepository.findByCashRegister(cashRegisterId)
+      return { success: true, data: movements }
+    } catch (err) {
+      console.error('[cashRegister:getMovements]', err)
+      return { success: false, error: 'Erro ao buscar movimentos.' }
+    }
+  })
 }

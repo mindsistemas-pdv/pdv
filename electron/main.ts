@@ -5,6 +5,8 @@ import { registerProductHandlers } from './ipc/productHandlers'
 import { registerSaleHandlers } from './ipc/saleHandlers'
 import { registerCashRegisterHandlers } from './ipc/cashRegisterHandlers'
 import { registerAuthHandlers } from './ipc/authHandlers'
+import { registerCustomerHandlers } from './ipc/customerHandlers'
+import { registerUserHandlers } from './ipc/userHandlers'
 
 const isDev = !app.isPackaged
 
@@ -40,6 +42,8 @@ app.whenReady().then(() => {
   registerProductHandlers()
   registerSaleHandlers()
   registerCashRegisterHandlers()
+  registerCustomerHandlers()
+  registerUserHandlers()
   createWindow()
 
   app.on('activate', () => {

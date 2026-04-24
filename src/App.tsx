@@ -7,19 +7,16 @@ import LoginPage from './pages/LoginPage'
 import MainLayout from './layouts/MainLayout'
 import PDVPage from './pages/PDVPage'
 import ProductsPage from './pages/ProductsPage'
+import CustomersPage from './pages/CustomersPage'
+import UsersPage from './pages/UsersPage'
 import CashRegisterPage from './pages/CashRegisterPage'
 
-// Carrega o caixa ativo assim que o usuário estiver disponível
 function CashRegisterLoader() {
   const { user } = useAuth()
   const { loadActiveCashRegister } = useCashRegister()
-
   useEffect(() => {
-    if (user) {
-      loadActiveCashRegister(user.id)
-    }
+    if (user) loadActiveCashRegister(user.id)
   }, [user?.id]) // eslint-disable-line
-
   return null
 }
 
@@ -31,17 +28,12 @@ export default function App() {
           <CashRegisterLoader />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <MainLayout />
-                </ProtectedRoute>
-              }
-            >
+            <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/pdv" replace />} />
               <Route path="pdv" element={<PDVPage />} />
               <Route path="products" element={<ProductsPage />} />
+              <Route path="customers" element={<CustomersPage />} />
+              <Route path="users" element={<UsersPage />} />
               <Route path="cash-register" element={<CashRegisterPage />} />
             </Route>
           </Routes>

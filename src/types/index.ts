@@ -84,19 +84,57 @@ export interface IpcResponse<T = unknown> {
   error?: string
 }
 
-// Tipagem da API exposta pelo preload
+// ─── Cliente ─────────────────────────────────────────────────────────────────
+
+export interface Customer {
+  id: number
+  name: string
+  cpf_cnpj: string | null
+  phone: string | null
+  email: string | null
+  active: number
+  created_at: string
+  updated_at: string
+}
+
+// ─── Movimento de caixa ──────────────────────────────────────────────────────
+
+export type CashMovementType = 'withdrawal' | 'supply'
+
+export interface CashMovement {
+  id: number
+  cash_register_id: number
+  user_id: number
+  type: CashMovementType
+  amount: number
+  description: string | null
+  created_at: string
+}
+
+// ─── Tipagem da API exposta pelo preload ─────────────────────────────────────
+
 export interface ElectronAPI {
   login: (username: string, password: string) => Promise<IpcResponse<User>>
   getProducts: () => Promise<IpcResponse<Product[]>>
   getProductByBarcode: (barcode: string) => Promise<IpcResponse<Product>>
   getProductByCode: (code: string) => Promise<IpcResponse<Product>>
-  createProduct: (product: Omit<Product, 'id' | 'active' | 'created_at' | 'updated_at'>) => Promise<IpcResponse<Product>>
-  updateProduct: (id: number, product: Omit<Product, 'id' | 'active' | 'created_at' | 'updated_at'>) => Promise<IpcResponse<Product>>
+  createProduct: (product: unknown) => Promise<IpcResponse<Product>>
+  updateProduct: (id: number, product: unknown) => Promise<IpcResponse<Product>>
   deleteProduct: (id: number) => Promise<IpcResponse>
+  getCustomers: () => Promise<IpcResponse<Customer[]>>
+  createCustomer: (customer: unknown) => Promise<IpcResponse<Customer>>
+  updateCustomer: (id: number, customer: unknown) => Promise<IpcResponse<Customer>>
+  deleteCustomer: (id: number) => Promise<IpcResponse>
+  getUsers: () => Promise<IpcResponse<User[]>>
+  createUser: (user: unknown) => Promise<IpcResponse<User>>
+  updateUser: (id: number, user: unknown) => Promise<IpcResponse<User>>
+  toggleUserActive: (id: number, active: boolean) => Promise<IpcResponse>
   openCashRegister: (userId: number, openingAmount: number) => Promise<IpcResponse<CashRegister>>
   closeCashRegister: (cashRegisterId: number, closingAmount: number) => Promise<IpcResponse<CashRegister>>
   getActiveCashRegister: (userId: number) => Promise<IpcResponse<CashRegister>>
   getCashRegisterSummary: (cashRegisterId: number) => Promise<IpcResponse<CashRegisterSummary>>
+  addCashMovement: (data: unknown) => Promise<IpcResponse<CashMovement>>
+  getCashMovements: (cashRegisterId: number) => Promise<IpcResponse<CashMovement[]>>
   createSale: (sale: unknown) => Promise<IpcResponse<Sale>>
   getSalesByCashRegister: (cashRegisterId: number) => Promise<IpcResponse<Sale[]>>
 }

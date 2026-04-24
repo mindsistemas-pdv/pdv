@@ -66,11 +66,34 @@ export function runMigrations(db: Database.Database): void {
       id              INTEGER PRIMARY KEY AUTOINCREMENT,
       sale_id         INTEGER NOT NULL REFERENCES sales(id),
       product_id      INTEGER NOT NULL REFERENCES products(id),
-      description     TEXT    NOT NULL, -- snapshot da descrição no momento da venda
+      description     TEXT    NOT NULL,
       quantity        REAL    NOT NULL,
-      unit_price      REAL    NOT NULL, -- snapshot do preço no momento da venda
+      unit_price      REAL    NOT NULL,
       discount_amount REAL    NOT NULL DEFAULT 0,
       total_amount    REAL    NOT NULL
+    );
+
+    -- Clientes
+    CREATE TABLE IF NOT EXISTS customers (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT    NOT NULL,
+      cpf_cnpj   TEXT,
+      phone      TEXT,
+      email      TEXT,
+      active     INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Movimentos de caixa (sangria e suprimento)
+    CREATE TABLE IF NOT EXISTS cash_movements (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      cash_register_id INTEGER NOT NULL REFERENCES cash_registers(id),
+      user_id          INTEGER NOT NULL REFERENCES users(id),
+      type             TEXT    NOT NULL, -- withdrawal (sangria) | supply (suprimento)
+      amount           REAL    NOT NULL,
+      description      TEXT,
+      created_at       TEXT    NOT NULL DEFAULT (datetime('now'))
     );
   `)
 
