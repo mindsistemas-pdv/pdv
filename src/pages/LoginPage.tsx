@@ -1,11 +1,9 @@
 import { useState, type FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useCashRegister } from '../contexts/CashRegisterContext'
 
 export default function LoginPage() {
   const { login, user } = useAuth()
-  const { loadActiveCashRegister } = useCashRegister()
   const navigate = useNavigate()
 
   const [username, setUsername] = useState('')
@@ -13,10 +11,12 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Se já está logado, redireciona
+  // Se já está logado, redireciona direto
   useEffect(() => {
-    if (user) navigate('/pdv', { replace: true })
-  }, [user, navigate])
+    if (user) {
+      navigate('/pdv', { replace: true })
+    }
+  }, [user]) // eslint-disable-line
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -25,16 +25,11 @@ export default function LoginPage() {
 
     const result = await login(username, password)
 
-    if (result.success) {
-      // Carrega caixa ativo do operador após login
-      const { user: loggedUser } = await import('../contexts/AuthContext').then(m => {
-        // Workaround: pega o user do contexto após login
-        return { user: null }
-      })
-      navigate('/pdv', { replace: true })
-    } else {
-      setError(result.error ?? 'Erro ao fazer login.')
+    if (!result.success) {
+      setError(result.error ?? 'Usuário ou senha incorretos.')
     }
+    // O redirecionamento acontece automaticamente pelo useEffect acima
+    // quando o user é setado no AuthContext
 
     setLoading(false)
   }
@@ -42,7 +37,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4">
       <div className="w-full max-w-sm animate-fadeIn">
-        {/* Logo / Header */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
             <span className="text-2xl font-bold text-white">M</span>
@@ -52,7 +47,10 @@ export default function LoginPage() {
         </div>
 
         {/* Formulário */}
-        <form onSubmit={handleSubmit} className="bg-surface-card rounded-2xl p-6 space-y-4 border border-surface-border">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface-card rounded-2xl p-6 space-y-4 border border-surface-border"
+        >
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">
               Usuário
@@ -62,7 +60,7 @@ export default function LoginPage() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               className="w-full bg-surface-input border border-surface-border rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-              placeholder="Digite seu usuário"
+              placeholder="admin"
               autoFocus
               required
             />
@@ -77,7 +75,7 @@ export default function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               className="w-full bg-surface-input border border-surface-border rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-              placeholder="Digite sua senha"
+              placeholder="••••••••"
               required
             />
           </div>
@@ -98,7 +96,9 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-xs text-slate-500 mt-4">
-          Usuário padrão: <span className="text-slate-400">admin</span> / <span className="text-slate-400">admin123</span>
+          Usuário padrão:{' '}
+          <span className="text-slate-400 font-mono">admin</span> /{' '}
+          <span className="text-slate-400 font-mono">admin123</span>
         </p>
       </div>
     </div>

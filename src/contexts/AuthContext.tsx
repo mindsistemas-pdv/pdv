@@ -11,19 +11,34 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // Persiste sessão em sessionStorage para sobreviver a hot-reloads em dev
-    const stored = sessionStorage.getItem('pdv_user')
-    return stored ? JSON.parse(stored) : null
+    try {
+      const stored = sessionStorage.getItem('pdv_user')
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
   })
 
   const login = useCallback(async (username: string, password: string) => {
-    const res = await window.api.login(username, password)
-    if (res.success && res.data) {
-      setUser(res.data)
-      sessionStorage.setItem('pdv_user', JSON.stringify(res.data))
-      return { success: true }
+    // Garante que o preload foi carregado corretamente
+    if (!window.api) {
+      return { success: false, error: 'API não disponível. Reinicie o aplicativo.' }
     }
-    return { success: false, error: res.error }
+
+    try {
+      const res = await window.api.login(username, password)
+
+      if (res.success && res.data) {
+        setUser(res.data)
+        sessionStorage.setItem('pdv_user', JSON.stringify(res.data))
+        return { success: true }
+      }
+
+      return { success: false, error: res.error ?? 'Usuário ou senha incorretos.' }
+    } catch (err) {
+      console.error('[login error]', err)
+      return { success: false, error: 'Erro de comunicação com o sistema.' }
+    }
   }, [])
 
   const logout = useCallback(() => {
