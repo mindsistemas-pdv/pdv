@@ -4,8 +4,8 @@
   "description": "MindSys PDV - Sistema de Ponto de Venda",
   "main": "dist-electron/main.js",
   "scripts": {
-    "start": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "start": "node start.js",
+    "dev": "node start.js",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build": "npm run build:electron && vite build && electron-builder",
     "preview": "vite preview"

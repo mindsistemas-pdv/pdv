@@ -13,6 +13,13 @@ const isDev = !app.isPackaged
 let mainWindow: BrowserWindow | null = null
 
 function createWindow() {
+  const preloadPath = path.join(__dirname, 'preload.js')
+  const fs = require('fs')
+  console.log('[MAIN] __dirname:', __dirname)
+  console.log('[MAIN] preload path:', preloadPath)
+  console.log('[MAIN] preload exists:', fs.existsSync(preloadPath))
+  console.log('[MAIN] isDev:', isDev)
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
