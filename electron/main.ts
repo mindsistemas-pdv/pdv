@@ -6,20 +6,11 @@ import { registerSaleHandlers } from './ipc/saleHandlers'
 import { registerCashRegisterHandlers } from './ipc/cashRegisterHandlers'
 import { registerAuthHandlers } from './ipc/authHandlers'
 
-// Em dev, o Vite roda na porta 5173
-// Em produção, carrega o index.html do build
 const isDev = !app.isPackaged
 
 let mainWindow: BrowserWindow | null = null
 
 function createWindow() {
-  const preloadPath = path.join(__dirname, 'preload.js')
-  const fs = require('fs')
-  console.log('[MAIN] __dirname:', __dirname)
-  console.log('[MAIN] preload path:', preloadPath)
-  console.log('[MAIN] preload exists:', fs.existsSync(preloadPath))
-  console.log('[MAIN] isDev:', isDev)
-
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -31,7 +22,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false, // necessário para o preload acessar módulos Node (contextBridge)
+      sandbox: false,
     },
   })
 
@@ -45,12 +36,10 @@ function createWindow() {
 
 app.whenReady().then(() => {
   initDatabase()
-
   registerAuthHandlers()
   registerProductHandlers()
   registerSaleHandlers()
   registerCashRegisterHandlers()
-
   createWindow()
 
   app.on('activate', () => {

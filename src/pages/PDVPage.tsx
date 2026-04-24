@@ -5,39 +5,35 @@ import { useCashRegister } from '../contexts/CashRegisterContext'
 import type { CartItem, Product } from '../types'
 import { formatCurrency } from '../utils/formatters'
 import PaymentModal from '../components/PaymentModal'
+import ConfirmModal from '../components/ConfirmModal'
+import Toast, { useToast } from '../components/Toast'
 
 export default function PDVPage() {
   const { user } = useAuth()
   const { cashRegister } = useCashRegister()
+  const { toast, showToast, hideToast } = useToast()
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchInput, setSearchInput] = useState('')
   const [searchError, setSearchError] = useState('')
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [lastSaleId, setLastSaleId] = useState<number | null>(null)
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  // ID da última linha adicionada — para o efeito de flash
+  const [flashedProductId, setFlashedProductId] = useState<number | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Foca no campo de busca ao montar e após cada venda
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [lastSaleId])
+  // Foca no campo ao montar
+  useEffect(() => { inputRef.current?.focus() }, [])
 
   const total = cart.reduce((sum, item) => sum + item.totalAmount, 0)
+  const caixaFechado = !cashRegister
 
-  /**
-   * Busca produto por código de barras ou código interno.
-   * Prioriza código de barras (leitura de scanner).
-   */
   const searchProduct = useCallback(async (query: string): Promise<Product | null> => {
-    // Tenta por código de barras primeiro
     let res = await window.api.getProductByBarcode(query)
     if (res.success && res.data) return res.data
-
-    // Fallback: código interno
     res = await window.api.getProductByCode(query)
     if (res.success && res.data) return res.data
-
     return null
   }, [])
 
@@ -52,7 +48,7 @@ export default function PDVPage() {
     const product = await searchProduct(query)
 
     if (!product) {
-      setSearchError(`Produto "${query}" não encontrado.`)
+      setSearchError(`"${query}" não encontrado.`)
       setSearchInput('')
       return
     }
@@ -66,7 +62,6 @@ export default function PDVPage() {
     setCart(prev => {
       const existing = prev.findIndex(i => i.productId === product.id)
       if (existing >= 0) {
-        // Incrementa quantidade se já está no carrinho
         return prev.map((item, idx) =>
           idx === existing
             ? { ...item, quantity: item.quantity + qty, totalAmount: (item.quantity + qty) * item.unitPrice }
@@ -81,6 +76,10 @@ export default function PDVPage() {
         totalAmount: qty * product.sale_price,
       }]
     })
+
+    // Flash visual na linha do produto adicionado
+    setFlashedProductId(product.id)
+    setTimeout(() => setFlashedProductId(null), 600)
   }
 
   function updateQty(index: number, delta: number) {
@@ -102,44 +101,41 @@ export default function PDVPage() {
     setCart([])
     setSearchError('')
     setSearchInput('')
-    inputRef.current?.focus()
+    setTimeout(() => inputRef.current?.focus(), 50)
   }
 
-  // Atalhos de teclado globais
+  // Atalhos globais
   useEffect(() => {
     function onKeyDown(e: globalThis.KeyboardEvent) {
-      // F5: finalizar venda
       if (e.key === 'F5' && cart.length > 0 && cashRegister) {
         e.preventDefault()
         setPaymentModalOpen(true)
       }
-      // F9: cancelar venda
       if (e.key === 'F9' && cart.length > 0) {
         e.preventDefault()
-        if (confirm('Cancelar a venda atual?')) clearCart()
+        setCancelModalOpen(true)
       }
-      // Escape: foca no campo de busca
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !paymentModalOpen && !cancelModalOpen) {
         inputRef.current?.focus()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [cart, cashRegister])
+  }, [cart, cashRegister, paymentModalOpen, cancelModalOpen])
 
-  async function handleSaleFinished(saleId: number) {
-    setLastSaleId(saleId)
+  function handleSaleFinished(saleId: number) {
     clearCart()
     setPaymentModalOpen(false)
+    showToast(`Venda #${saleId} registrada com sucesso!`, 'success')
   }
-
-  const caixaFechado = !cashRegister
 
   return (
     <div className="h-full flex overflow-hidden">
-      {/* Coluna esquerda: campo de busca + lista de itens */}
-      <div className="flex-1 flex flex-col border-r border-surface-border">
-        {/* Campo de busca / leitura de código */}
+
+      {/* Coluna esquerda: busca + itens */}
+      <div className="flex-1 flex flex-col border-r border-surface-border min-w-0">
+
+        {/* Campo de busca */}
         <div className="p-3 border-b border-surface-border">
           <input
             ref={inputRef}
@@ -148,8 +144,12 @@ export default function PDVPage() {
             onChange={e => { setSearchInput(e.target.value); setSearchError('') }}
             onKeyDown={handleSearchKeyDown}
             disabled={caixaFechado}
-            placeholder={caixaFechado ? 'Abra o caixa para iniciar vendas' : 'Código de barras ou código interno — Enter para adicionar'}
-            className="w-full bg-surface-input border border-surface-border rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            placeholder={
+              caixaFechado
+                ? 'Abra o caixa para iniciar vendas...'
+                : 'Código de barras ou código interno — Enter para adicionar'
+            }
+            className="w-full bg-surface-input border border-surface-border rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
           />
           {searchError && (
             <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
@@ -158,62 +158,75 @@ export default function PDVPage() {
           )}
         </div>
 
-        {/* Aviso de caixa fechado */}
+        {/* Aviso caixa fechado */}
         {caixaFechado && (
-          <div className="m-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg px-4 py-3 text-yellow-400 text-sm flex items-center gap-2">
-            <AlertCircle size={16} />
-            Caixa fechado. Vá em <strong>Caixa</strong> para abrir antes de vender.
+          <div className="mx-3 mt-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-4 py-3 text-yellow-400 text-sm flex items-center gap-2">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>Caixa fechado. Acesse <strong>Caixa</strong> no menu para abrir.</span>
           </div>
         )}
 
-        {/* Lista de itens do carrinho */}
+        {/* Lista de itens */}
         <div className="flex-1 overflow-y-auto">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-3">
-              <ShoppingCart size={48} className="opacity-20" />
+            <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-3 select-none">
+              <ShoppingCart size={52} strokeWidth={1} />
               <p className="text-sm">Nenhum item na venda</p>
-              <p className="text-xs">Digite o código e pressione Enter</p>
+              <p className="text-xs text-slate-700">Digite o código e pressione Enter</p>
             </div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-surface border-b border-surface-border">
+              <thead className="sticky top-0 bg-surface border-b border-surface-border z-10">
                 <tr>
-                  <th className="text-left px-4 py-2 text-slate-400 font-medium">#</th>
-                  <th className="text-left px-4 py-2 text-slate-400 font-medium">Produto</th>
-                  <th className="text-center px-4 py-2 text-slate-400 font-medium">Qtd</th>
-                  <th className="text-right px-4 py-2 text-slate-400 font-medium">Unit.</th>
-                  <th className="text-right px-4 py-2 text-slate-400 font-medium">Total</th>
-                  <th className="px-2 py-2"></th>
+                  <th className="text-left px-4 py-2.5 text-slate-500 font-medium w-8">#</th>
+                  <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Produto</th>
+                  <th className="text-center px-4 py-2.5 text-slate-500 font-medium w-28">Qtd</th>
+                  <th className="text-right px-4 py-2.5 text-slate-500 font-medium w-24">Unit.</th>
+                  <th className="text-right px-4 py-2.5 text-slate-500 font-medium w-28">Total</th>
+                  <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {cart.map((item, i) => (
-                  <tr key={item.productId} className="border-b border-surface-border/30 hover:bg-white/[0.02]">
-                    <td className="px-4 py-2.5 text-slate-500 text-xs">{i + 1}</td>
-                    <td className="px-4 py-2.5 text-white">{item.description}</td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center justify-center gap-1">
+                  <tr
+                    key={item.productId}
+                    className={`border-b border-surface-border/30 transition-colors duration-300 ${
+                      flashedProductId === item.productId
+                        ? 'bg-primary-600/20'
+                        : 'hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    <td className="px-4 py-3 text-slate-600 text-xs">{i + 1}</td>
+                    <td className="px-4 py-3 text-white font-medium">{item.description}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => updateQty(i, -1)}
-                          className="p-0.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                          className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
                         >
-                          <Minus size={12} />
+                          <Minus size={11} />
                         </button>
-                        <span className="w-8 text-center text-white font-medium">{item.quantity}</span>
+                        <span className="w-8 text-center text-white font-semibold tabular-nums">
+                          {item.quantity}
+                        </span>
                         <button
                           onClick={() => updateQty(i, 1)}
-                          className="p-0.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                          className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
                         >
-                          <Plus size={12} />
+                          <Plus size={11} />
                         </button>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-right text-slate-300">{formatCurrency(item.unitPrice)}</td>
-                    <td className="px-4 py-2.5 text-right text-white font-medium">{formatCurrency(item.totalAmount)}</td>
-                    <td className="px-2 py-2.5">
+                    <td className="px-4 py-3 text-right text-slate-400 tabular-nums">
+                      {formatCurrency(item.unitPrice)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-white font-semibold tabular-nums">
+                      {formatCurrency(item.totalAmount)}
+                    </td>
+                    <td className="px-2 py-3">
                       <button
                         onClick={() => removeItem(i)}
-                        className="p-1 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                        className="w-7 h-7 flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -226,48 +239,56 @@ export default function PDVPage() {
         </div>
       </div>
 
-      {/* Coluna direita: totais e ações */}
-      <div className="w-72 flex flex-col bg-surface-card">
+      {/* Coluna direita: total + ações */}
+      <div className="w-68 flex flex-col bg-surface-card" style={{ width: '17rem' }}>
+
         {/* Total */}
         <div className="flex-1 flex flex-col items-center justify-center p-6 border-b border-surface-border">
-          <p className="text-slate-400 text-sm mb-2">Total da Venda</p>
-          <p className="text-4xl font-bold text-white">{formatCurrency(total)}</p>
-          <p className="text-slate-500 text-xs mt-2">{cart.length} {cart.length === 1 ? 'item' : 'itens'}</p>
+          <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">Total da Venda</p>
+          <p className="text-5xl font-bold text-white tabular-nums leading-none">
+            {formatCurrency(total)}
+          </p>
+          <p className="text-slate-600 text-xs mt-3">
+            {cart.length === 0
+              ? 'Nenhum item'
+              : `${cart.length} ${cart.length === 1 ? 'item' : 'itens'}`
+            }
+          </p>
         </div>
 
         {/* Atalhos */}
-        <div className="p-3 border-b border-surface-border space-y-1 text-xs text-slate-500">
-          <p><kbd className="bg-surface-input px-1 rounded">F5</kbd> Finalizar venda</p>
-          <p><kbd className="bg-surface-input px-1 rounded">F9</kbd> Cancelar venda</p>
-          <p><kbd className="bg-surface-input px-1 rounded">Esc</kbd> Focar no campo</p>
+        <div className="px-4 py-3 border-b border-surface-border space-y-1.5">
+          <p className="text-xs text-slate-600">
+            <kbd className="bg-surface-input border border-surface-border px-1.5 py-0.5 rounded text-slate-400 font-mono text-xs">F5</kbd>
+            {' '}<span className="text-slate-500">Finalizar venda</span>
+          </p>
+          <p className="text-xs text-slate-600">
+            <kbd className="bg-surface-input border border-surface-border px-1.5 py-0.5 rounded text-slate-400 font-mono text-xs">F9</kbd>
+            {' '}<span className="text-slate-500">Cancelar venda</span>
+          </p>
+          <p className="text-xs text-slate-600">
+            <kbd className="bg-surface-input border border-surface-border px-1.5 py-0.5 rounded text-slate-400 font-mono text-xs">Esc</kbd>
+            {' '}<span className="text-slate-500">Focar no campo</span>
+          </p>
         </div>
 
-        {/* Botões de ação */}
+        {/* Botões */}
         <div className="p-3 space-y-2">
           <button
             onClick={() => setPaymentModalOpen(true)}
             disabled={cart.length === 0 || caixaFechado}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-colors text-sm"
+            className="w-full bg-green-600 hover:bg-green-500 active:bg-green-700 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition-colors text-sm"
           >
             Finalizar Venda (F5)
           </button>
           <button
-            onClick={() => { if (confirm('Cancelar a venda atual?')) clearCart() }}
+            onClick={() => setCancelModalOpen(true)}
             disabled={cart.length === 0}
-            className="w-full bg-surface-input hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 font-medium py-2 rounded-xl transition-colors text-sm"
+            className="w-full bg-surface-input hover:bg-slate-600 active:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 font-medium py-2.5 rounded-xl transition-colors text-sm"
           >
-            Cancelar (F9)
+            Cancelar Venda (F9)
           </button>
         </div>
-
-        {/* Última venda */}
-        {lastSaleId && (
-          <div className="px-3 pb-3">
-            <p className="text-xs text-green-400 text-center">
-              ✓ Venda #{lastSaleId} registrada
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Modal de pagamento */}
@@ -279,6 +300,29 @@ export default function PDVPage() {
           userId={user.id}
           onClose={() => setPaymentModalOpen(false)}
           onFinished={handleSaleFinished}
+        />
+      )}
+
+      {/* Modal de confirmação de cancelamento */}
+      {cancelModalOpen && (
+        <ConfirmModal
+          title="Cancelar venda"
+          message="Todos os itens serão removidos. Deseja continuar?"
+          confirmLabel="Sim, cancelar"
+          cancelLabel="Não"
+          danger
+          onConfirm={() => { setCancelModalOpen(false); clearCart() }}
+          onCancel={() => setCancelModalOpen(false)}
+        />
+      )}
+
+      {/* Toast de feedback */}
+      {toast && (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import type { User } from '../types'
 
 interface AuthContextValue {
   user: User | null
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
   logout: () => void
 }
 
@@ -20,7 +20,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   const login = useCallback(async (username: string, password: string) => {
-    // Garante que o preload foi carregado corretamente
     if (!window.api) {
       return { success: false, error: 'API não disponível. Reinicie o aplicativo.' }
     }
@@ -31,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.success && res.data) {
         setUser(res.data)
         sessionStorage.setItem('pdv_user', JSON.stringify(res.data))
-        return { success: true }
+        return { success: true, user: res.data }
       }
 
       return { success: false, error: res.error ?? 'Usuário ou senha incorretos.' }
